@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   # ============================================================================
   # 1. PostgreSQL Database Service
@@ -15,14 +13,12 @@ services:
     ports:
       - "${POSTGRES_PORT:-5433}:5432"
     volumes:
-      - linkers_postgres_data:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-linkers_prescription_dev}"]
       interval: 5s
       timeout: 5s
       retries: 5
-    networks:
-      - linkers_network
     profiles:
       - infra
       - app
@@ -40,13 +36,9 @@ services:
       PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD:-admin}
     ports:
       - "${PGADMIN_PORT:-5055}:80"
-    volumes:
-      - linkers_pgadmin_data:/var/lib/pgadmin
     depends_on:
       postgres:
         condition: service_healthy
-    networks:
-      - linkers_network
     profiles:
       - infra
       - tools
@@ -75,8 +67,6 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-    networks:
-      - linkers_network
     profiles:
       - app
       - all
@@ -99,16 +89,9 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-    networks:
-      - linkers_network
     profiles:
       - tools
       - all
 
 volumes:
-  linkers_postgres_data:
-  linkers_pgadmin_data:
-
-networks:
-  linkers_network:
-    driver: bridge
+  postgres_data:
