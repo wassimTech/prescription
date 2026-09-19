@@ -234,8 +234,9 @@ Every commit and push is safeguarded:
 
 1. **Pre-commit (`husky` + `lint-staged`)**:
    - Staged `.ts` files must automatically pass `eslint --fix` and `prettier --write`.
+   - Must pass full unit test suites (`npm test`) before the commit is created.
 2. **Pre-push (`husky`)**:
-   - Must run full typecheck (`tsc --noEmit`) and Jest test suites (`npm run test`).
+   - Must run full typecheck (`tsc --noEmit`) and E2E test suites (`npm run test:e2e`).
 3. **Deterministic CI/CD**:
    - Dockerfile must use deterministic multi-stage builds (`node:22-alpine` or `node:20-alpine`), cache `node_modules`, generate Prisma client during build, and execute with a non-root user in production.
 
