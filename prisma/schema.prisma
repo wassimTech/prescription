@@ -1,0 +1,142 @@
+// ==============================================================================
+// PRISMA SCHEMA - LINKERS IT PRESCRIPTION-TO-ECOMMERCE SAAS
+// ==============================================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ------------------------------------------------------------------------------
+// ENUMS
+// ------------------------------------------------------------------------------
+
+enum UserRole {
+  ADMIN
+  BRAND_MANAGER
+  PRESCRIBER
+}
+
+enum PrescriberStatus {
+  PENDING
+  VERIFYING_AI
+  APPROVED
+  REJECTED
+}
+
+enum AttributionStatus {
+  PENDING
+  CONFIRMED
+  REFUNDED
+  PAID
+}
+
+// ------------------------------------------------------------------------------
+// MODELS
+// ------------------------------------------------------------------------------
+
+model User {
+  id           String            @id @default(uuid())
+  email        String            @unique
+  passwordHash String            @map("password_hash")
+  role         UserRole          @default(PRESCRIBER)
+  createdAt    DateTime          @default(now()) @map("created_at")
+  updatedAt    DateTime          @updatedAt @map("updated_at")
+
+  // Relations
+  prescriberProfile PrescriberProfile?
+  brand             Brand?
+
+  @@map("users")
+}
+
+model Brand {
+  id                    String             @id @default(uuid())
+  userId                String             @unique @map("user_id")
+  name                  String
+  slug                  String             @unique
+  shopifyDomain         String             @unique @map("shopify_domain")
+  shopifyAccessToken    String?            @map("shopify_access_token")
+  defaultCommissionRate Float              @default(10.0) @map("default_commission_rate")
+  createdAt             DateTime           @default(now()) @map("created_at")
+  updatedAt             DateTime           @updatedAt @map("updated_at")
+
+  // Relations
+  user         User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  prescriptions Prescription[]
+  attributions OrderAttribution[]
+
+  @@map("brands")
+}
+
+model PrescriberProfile {
+  id                 String           @id @default(uuid())
+  userId             String           @unique @map("user_id")
+  fullName           String           @map("full_name")
+  specialty          String           @default("Fitness Coach")
+  phone              String?
+  status             PrescriberStatus @default(PENDING)
+  promoCode          String           @unique @map("promo_code")
+  totalEarningsCents Int              @default(0) @map("total_earnings_cents")
+  pendingPayoutCents Int              @default(0) @map("pending_payout_cents")
+  createdAt          DateTime         @default(now()) @map("created_at")
+  updatedAt          DateTime         @updatedAt @map("updated_at")
+
+  // Relations
+  user          User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  prescriptions Prescription[]
+  attributions  OrderAttribution[]
+
+  @@map("prescriber_profiles")
+}
+
+model Prescription {
+  id           String             @id @default(uuid())
+  token        String             @unique
+  brandId      String             @map("brand_id")
+  prescriberId String             @map("prescriber_id")
+  items        Json               // Array of { variantId, title, quantity, priceCents }
+  promoCode    String             @map("promo_code")
+  notes        String?
+  clicksCount  Int                @default(0) @map("clicks_count")
+  expiresAt    DateTime?          @map("expires_at")
+  createdAt    DateTime           @default(now()) @map("created_at")
+  updatedAt    DateTime           @updatedAt @map("updated_at")
+
+  // Relations
+  brand        Brand              @relation(fields: [brandId], references: [id], onDelete: Cascade)
+  prescriber   PrescriberProfile  @relation(fields: [prescriberId], references: [id], onDelete: Cascade)
+  attributions OrderAttribution[]
+
+  @@index([brandId])
+  @@index([prescriberId])
+  @@index([token])
+  @@map("prescriptions")
+}
+
+model OrderAttribution {
+  id                     String            @id @default(uuid())
+  brandId                String            @map("brand_id")
+  prescriberId           String            @map("prescriber_id")
+  prescriptionId         String?           @map("prescription_id")
+  shopifyOrderId         String            @unique @map("shopify_order_id")
+  orderAmountCents       Int               @map("order_amount_cents")
+  commissionAmountCents  Int               @map("commission_amount_cents")
+  status                 AttributionStatus @default(PENDING)
+  shopifyCreatedAt       DateTime          @map("shopify_created_at")
+  createdAt              DateTime          @default(now()) @map("created_at")
+  updatedAt              DateTime          @updatedAt @map("updated_at")
+
+  // Relations
+  brand        Brand              @relation(fields: [brandId], references: [id], onDelete: Cascade)
+  prescriber   PrescriberProfile  @relation(fields: [prescriberId], references: [id], onDelete: Cascade)
+  prescription Prescription?      @relation(fields: [prescriptionId], references: [id], onDelete: SetNull)
+
+  @@index([brandId, status])
+  @@index([prescriberId, status])
+  @@map("order_attributions")
+}
