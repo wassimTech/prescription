@@ -20,9 +20,7 @@ services:
       timeout: 5s
       retries: 5
     profiles:
-      - infra
-      - app
-      - all
+      - dev
 
   # ============================================================================
   # 2. pgAdmin 4 Web GUI
@@ -40,58 +38,7 @@ services:
       postgres:
         condition: service_healthy
     profiles:
-      - infra
-      - tools
-      - all
-
-  # ============================================================================
-  # 3. NestJS Application (Development)
-  # ============================================================================
-  api:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      target: development
-    container_name: linkers_nest_api
-    restart: unless-stopped
-    environment:
-      NODE_ENV: development
-      PORT: 3000
-      DATABASE_URL: "postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-linkers_prescription_dev}?schema=public"
-      JWT_SECRET: ${JWT_SECRET:-super_secret_jwt}
-    ports:
-      - "${PORT:-3000}:3000"
-    volumes:
-      - .:/usr/src/app
-      - /usr/src/app/node_modules
-    depends_on:
-      postgres:
-        condition: service_healthy
-    profiles:
-      - app
-      - all
-
-  # ============================================================================
-  # 4. Prisma Studio GUI
-  # ============================================================================
-  prisma-studio:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      target: development
-    container_name: linkers_prisma_studio
-    restart: unless-stopped
-    command: npx prisma studio --port 5555 --hostname 0.0.0.0
-    environment:
-      DATABASE_URL: "postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-linkers_prescription_dev}?schema=public"
-    ports:
-      - "${PRISMA_STUDIO_PORT:-5555}:5555"
-    depends_on:
-      postgres:
-        condition: service_healthy
-    profiles:
-      - tools
-      - all
+      - dev
 
 volumes:
   postgres_data:

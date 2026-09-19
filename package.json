@@ -26,11 +26,8 @@
     "prisma:deploy": "prisma migrate deploy",
     "prisma:studio": "prisma studio",
     "prisma:seed": "ts-node prisma/seed.ts",
-    "docker:infra": "docker compose --profile infra up -d",
-    "docker:app": "docker compose --profile app up -d",
-    "docker:tools": "docker compose --profile tools up -d",
-    "docker:all": "docker compose --profile all up -d",
-    "docker:down": "docker compose --profile all down",
+    "docker:up": "docker compose --profile dev up -d",
+    "docker:down": "docker compose --profile dev down",
     "docker:logs": "docker compose logs -f",
     "prepare": "husky"
   },
