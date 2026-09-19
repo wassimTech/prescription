@@ -32,7 +32,7 @@ Use the following stack strictly:
 - **Asynchronous Jobs & Queues**: Redis + BullMQ (for high-volume Shopify webhook ingestion and commission calculations)
 - **Validation & Serialization**: `class-validator`, `class-transformer` with a global `ValidationPipe`
 - **Testing**:
-  - **Jest** & **Supertest** for unit and end-to-end (E2E) test suites
+  - **Vitest** & **Supertest** for lightning-fast unit and end-to-end (E2E) test suites with native ESM and SWC support
   - **MSW (Mock Service Worker - `msw/node`)** for intercepting and simulating external APIs (Shopify GraphQL/REST, Payment Gateways, Webhooks) without network flakiness
 - **Code Quality & Tooling**:
   - **ESLint** (`@typescript-eslint`) with zero-tolerance for lint warnings
@@ -122,12 +122,12 @@ Middleware → Guards → Interceptors (before) → Pipes → Handler → Interc
 
 ---
 
-## Testing Strategy with Jest & MSW (Mock Service Worker)
+## Testing Strategy with Vitest & MSW (Mock Service Worker)
 
 Reliable testing is non-negotiable for e-commerce and financial attribution.
 
-1. **Unit Testing (Jest)**:
-   - Test domain business logic in isolation.
+1. **Unit Testing (Vitest)**:
+   - Test domain business logic in isolation using `describe`, `it`, `expect`, `vi.fn()`, and `vi.spyOn()`.
    - Mock Prisma Client using `jest-mock-extended` or deep mock utilities.
 2. **External API Mocking with MSW (`msw/node`)**:
    - **NO network calls to live Shopify or third-party APIs during tests.**
@@ -145,10 +145,7 @@ The project must support flexible developer workflows using **Docker Compose Pro
 
 | Profile | Services Started | Purpose |
 |---|---|---|
-| `infra` | `postgres`, `pgadmin` | Run DB and UI tools in Docker while running NestJS locally (`npm run start:dev`) for lightning-fast debugging. |
-| `app` | `api`, `postgres` | Run the complete containerized NestJS application with database. |
-| `tools` | `prisma-studio`, `pgadmin` | Web management tools for database inspection. |
-| `all` | `api`, `postgres`, `pgadmin`, `prisma-studio` | Full-stack containerized ecosystem. |
+| `dev` | `postgres`, `pgadmin` | Run DB and pgAdmin in Docker while running NestJS locally (`npm run start:dev`) for lightning-fast debugging. |
 
 ### Port Convention (No Conflicts):
 - Postgres: `${POSTGRES_PORT:-5433}` (avoids collision with default 5432)
@@ -222,8 +219,9 @@ template/
 │   ├── mocks/                      # MSW server, handlers, and fixtures
 │   │   ├── handlers.ts             # Shopify & webhook mock handlers
 │   │   └── server.ts               # MSW setupServer instance
-│   ├── app.e2e-spec.ts
-│   └── jest-e2e.json
+│   └── app.e2e-spec.ts
+├── vitest.config.mts               # Vitest unit test configuration
+├── vitest.config.e2e.mts           # Vitest E2E test configuration
 ├── package.json
 └── tsconfig.json
 ```

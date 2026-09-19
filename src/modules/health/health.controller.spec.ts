@@ -1,4 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { HealthController } from './health.controller';
 import { PrismaService } from '@/prisma/prisma.service';
 
@@ -13,7 +14,7 @@ describe('HealthController', () => {
         {
           provide: PrismaService,
           useValue: {
-            $queryRaw: jest.fn().mockResolvedValue([{ '?column?': 1 }]),
+            $queryRaw: vi.fn().mockResolvedValue([{ '?column?': 1 }]),
           },
         },
       ],
@@ -35,7 +36,7 @@ describe('HealthController', () => {
   });
 
   it('should return error status when database fails', async () => {
-    jest.spyOn(prismaService, '$queryRaw').mockRejectedValueOnce(new Error('DB Connection error'));
+    vi.spyOn(prismaService, '$queryRaw').mockRejectedValueOnce(new Error('DB Connection error'));
     const result = await controller.check();
     expect(result.status).toBe('ok');
     expect(result.database).toBe('error');

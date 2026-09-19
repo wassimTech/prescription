@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
-import * as request from 'supertest';
+import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest';
+import request from 'supertest';
 import { AppModule } from '@/app.module';
 import { PrismaService } from '@/prisma/prisma.service';
 
@@ -8,7 +9,7 @@ describe('AppController (e2e)', () => {
   let app: INestApplication;
 
   const mockPrismaService = {
-    $queryRaw: jest.fn().mockResolvedValue([{ '?column?': 1 }]),
+    $queryRaw: vi.fn().mockResolvedValue([{ '?column?': 1 }]),
   };
 
   beforeAll(async () => {
