@@ -1,7 +1,7 @@
 # ==============================================================================
 # 1. BASE STAGE
 # ==============================================================================
-FROM node:20-alpine AS base
+FROM node:22-alpine AS base
 
 WORKDIR /usr/src/app
 
@@ -44,7 +44,7 @@ RUN npm prune --production
 # ==============================================================================
 # 4. PRODUCTION RUNNER STAGE (Lean, minimal attack surface, non-root user)
 # ==============================================================================
-FROM node:20-alpine AS production
+FROM node:22-alpine AS production
 
 WORKDIR /usr/src/app
 
