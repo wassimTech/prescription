@@ -43,7 +43,7 @@ async function main() {
           status: PrescriberStatus.APPROVED,
           promoCode: 'KARIM10',
           totalEarningsCents: 15000, // 150.00 EUR
-          pendingPayoutCents: 5000,  // 50.00 EUR
+          pendingPayoutCents: 5000, // 50.00 EUR
         },
       },
     },
@@ -60,8 +60,18 @@ async function main() {
         promoCode: prescriberUser.prescriberProfile.promoCode,
         notes: 'Pack prise de masse sèche personnalisé',
         items: [
-          { variantId: 'gid://shopify/ProductVariant/101', title: 'Whey Isolate Vanille 1kg', quantity: 2, priceCents: 4500 },
-          { variantId: 'gid://shopify/ProductVariant/102', title: 'Créatine Monohydrate 300g', quantity: 1, priceCents: 2200 },
+          {
+            variantId: 'gid://shopify/ProductVariant/101',
+            title: 'Whey Isolate Vanille 1kg',
+            quantity: 2,
+            priceCents: 4500,
+          },
+          {
+            variantId: 'gid://shopify/ProductVariant/102',
+            title: 'Créatine Monohydrate 300g',
+            quantity: 1,
+            priceCents: 2200,
+          },
         ],
       },
     });
