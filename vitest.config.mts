@@ -7,6 +7,7 @@ export default defineConfig({
     root: './',
     environment: 'node',
     include: ['src/**/*.spec.ts'],
+    setupFiles: ['./test/setup.ts'],
   },
   resolve: {
     tsconfigPaths: true,

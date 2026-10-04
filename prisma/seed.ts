@@ -3,7 +3,7 @@ import { PrismaClient, UserRole, PrescriberStatus } from '@prisma/client';
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log('🌱 Seeding Linkers IT test database...');
+  console.log('🌱 Seeding test database...');
 
   // 1. Clean existing records
   await prisma.orderAttribution.deleteMany();

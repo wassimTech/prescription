@@ -2,22 +2,37 @@ import { NestFactory } from '@nestjs/core';
 import { ValidationPipe, Logger } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from '@/app.module';
-import { LoggingInterceptor } from '@/common/interceptors/logging.interceptor';
 
 async function bootstrap() {
   const logger = new Logger('Bootstrap');
   const app = await NestFactory.create(AppModule);
 
-  // Global prefix
+  // 1. Enable graceful shutdown hooks (for Prisma and background tasks)
+  app.enableShutdownHooks();
+
+  // 2. Global prefix
   app.setGlobalPrefix('api');
 
-  // CORS
+  // 3. Strict CORS configuration (no reflected wildcard with credentials)
+  const allowedOrigins = process.env.ALLOWED_ORIGINS
+    ? process.env.ALLOWED_ORIGINS.split(',').map((origin) => origin.trim())
+    : ['http://localhost:3000', 'http://localhost:5173'];
+
   app.enableCors({
-    origin: true,
+    origin: (origin, callback) => {
+      // Allow requests with no origin (like mobile apps, curl, server-to-server)
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error(`CORS policy: Origin ${origin} not allowed`));
+      }
+    },
     credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
   });
 
-  // Global validation pipe
+  // 4. Global validation pipe
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
@@ -29,12 +44,9 @@ async function bootstrap() {
     }),
   );
 
-  // Global logging interceptor
-  app.useGlobalInterceptors(new LoggingInterceptor());
-
-  // Swagger Documentation Setup
+  // 5. Swagger Documentation Setup
   const swaggerConfig = new DocumentBuilder()
-    .setTitle('Linkers IT - Prescription-to-eCommerce SaaS API')
+    .setTitle('Prescription-to-eCommerce SaaS API')
     .setDescription(
       'API RESTful powering Brand dashboards, Prescriber portal, Shopify integration, Attribution and Commission engine.',
     )
@@ -50,6 +62,7 @@ async function bootstrap() {
       },
       'JWT-auth',
     )
+    .addTag('Auth', 'Authentication and role-based access control (JWT & RBAC)')
     .addTag('Health', 'Health checks and database readiness')
     .addTag('Prescriptions', 'Curated carts & tracked link engine')
     .addTag('Shopify', 'Storefront, Admin GraphQL, and Webhook ingestion')
@@ -58,7 +71,7 @@ async function bootstrap() {
 
   const document = SwaggerModule.createDocument(app, swaggerConfig);
   SwaggerModule.setup('api/docs', app, document, {
-    customSiteTitle: 'Linkers IT SaaS API Docs',
+    customSiteTitle: 'Prescription SaaS API Docs',
     swaggerOptions: {
       persistAuthorization: true,
     },
@@ -67,7 +80,7 @@ async function bootstrap() {
   const port = process.env.PORT || 3000;
   await app.listen(port);
 
-  logger.log(`🚀 Linkers IT Prescription SaaS API running on: http://localhost:${port}/api`);
+  logger.log(`🚀 Prescription SaaS API running on: http://localhost:${port}/api`);
   logger.log(`📚 Swagger UI documentation available at: http://localhost:${port}/api/docs`);
   logger.log(`🏥 Health check available at: http://localhost:${port}/api/health`);
 }

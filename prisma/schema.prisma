@@ -1,5 +1,5 @@
 // ==============================================================================
-// PRISMA SCHEMA - LINKERS IT PRESCRIPTION-TO-ECOMMERCE SAAS
+// PRISMA SCHEMA - PRESCRIPTION-TO-ECOMMERCE SAAS
 // ==============================================================================
 
 generator client {
@@ -61,7 +61,7 @@ model Brand {
   slug                  String             @unique
   shopifyDomain         String             @unique @map("shopify_domain")
   shopifyAccessToken    String?            @map("shopify_access_token")
-  defaultCommissionRate Float              @default(10.0) @map("default_commission_rate")
+  defaultCommissionRate Decimal            @default(10.00) @db.Decimal(5, 2) @map("default_commission_rate")
   createdAt             DateTime           @default(now()) @map("created_at")
   updatedAt             DateTime           @updatedAt @map("updated_at")
 
@@ -115,6 +115,7 @@ model Prescription {
   @@index([brandId])
   @@index([prescriberId])
   @@index([token])
+  @@index([promoCode])
   @@map("prescriptions")
 }
 
