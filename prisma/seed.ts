@@ -1,13 +1,14 @@
-import { PrismaClient, UserRole, PrescriberStatus } from '@prisma/client';
+import { PrismaClient, UserRole, PrescriberStatus, DiscountType } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
 async function main() {
   console.log('🌱 Seeding test database...');
 
-  // 1. Clean existing records
+  // 1. Clean existing records in referential order
   await prisma.orderAttribution.deleteMany();
   await prisma.prescription.deleteMany();
+  await prisma.promoCode.deleteMany();
   await prisma.prescriberProfile.deleteMany();
   await prisma.brand.deleteMany();
   await prisma.user.deleteMany();
@@ -41,7 +42,6 @@ async function main() {
           fullName: 'Karim Ben Salem',
           specialty: 'Nutrition & CrossFit Coach',
           status: PrescriberStatus.APPROVED,
-          promoCode: 'KARIM10',
           totalEarningsCents: 15000, // 150.00 EUR
           pendingPayoutCents: 5000, // 50.00 EUR
         },
@@ -50,14 +50,26 @@ async function main() {
     include: { prescriberProfile: true },
   });
 
-  // 4. Create Sample Prescription
+  // 4. Create PromoCode (Scoped to Brand and Prescriber)
   if (brandUser.brand && prescriberUser.prescriberProfile) {
+    const promoCode = await prisma.promoCode.create({
+      data: {
+        code: 'KARIM10',
+        brandId: brandUser.brand.id,
+        prescriberId: prescriberUser.prescriberProfile.id,
+        discountType: DiscountType.PERCENTAGE,
+        discountValue: 10.0,
+        isActive: true,
+      },
+    });
+
+    // 5. Create Sample Prescription with linked PromoCode
     await prisma.prescription.create({
       data: {
         token: 'presc_karim_9941a',
         brandId: brandUser.brand.id,
         prescriberId: prescriberUser.prescriberProfile.id,
-        promoCode: prescriberUser.prescriberProfile.promoCode,
+        promoCodeId: promoCode.id,
         notes: 'Pack prise de masse sèche personnalisé',
         items: [
           {

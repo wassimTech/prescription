@@ -1,11 +1,9 @@
-import { Test, TestingModule } from '@nestjs/testing';
-import { INestApplication, ValidationPipe } from '@nestjs/common';
+import { INestApplication } from '@nestjs/common';
 import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest';
 import request from 'supertest';
 import * as bcrypt from 'bcrypt';
-import { AppModule } from '@/app.module';
-import { PrismaService } from '@/prisma/prisma.service';
 import { UserRole } from '@prisma/client';
+import { createTestApp } from './helpers/create-test-app';
 
 describe('AuthController (e2e)', () => {
   let app: INestApplication;
@@ -67,23 +65,7 @@ describe('AuthController (e2e)', () => {
       updatedAt: new Date(),
     });
 
-    const moduleFixture: TestingModule = await Test.createTestingModule({
-      imports: [AppModule],
-    })
-      .overrideProvider(PrismaService)
-      .useValue(mockPrismaService)
-      .compile();
-
-    app = moduleFixture.createNestApplication();
-    app.setGlobalPrefix('api');
-    app.useGlobalPipes(
-      new ValidationPipe({
-        whitelist: true,
-        forbidNonWhitelisted: true,
-        transform: true,
-      }),
-    );
-    await app.init();
+    app = await createTestApp({ mockPrisma: mockPrismaService });
   });
 
   afterAll(async () => {

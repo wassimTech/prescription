@@ -35,6 +35,11 @@ enum AttributionStatus {
   PAID
 }
 
+enum DiscountType {
+  PERCENTAGE
+  FIXED_AMOUNT
+}
+
 // ------------------------------------------------------------------------------
 // MODELS
 // ------------------------------------------------------------------------------
@@ -66,9 +71,10 @@ model Brand {
   updatedAt             DateTime           @updatedAt @map("updated_at")
 
   // Relations
-  user         User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user          User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  promoCodes    PromoCode[]
   prescriptions Prescription[]
-  attributions OrderAttribution[]
+  attributions  OrderAttribution[]
 
   @@map("brands")
 }
@@ -80,7 +86,6 @@ model PrescriberProfile {
   specialty          String           @default("Fitness Coach")
   phone              String?
   status             PrescriberStatus @default(PENDING)
-  promoCode          String           @unique @map("promo_code")
   totalEarningsCents Int              @default(0) @map("total_earnings_cents")
   pendingPayoutCents Int              @default(0) @map("pending_payout_cents")
   createdAt          DateTime         @default(now()) @map("created_at")
@@ -88,10 +93,39 @@ model PrescriberProfile {
 
   // Relations
   user          User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  promoCodes    PromoCode[]
   prescriptions Prescription[]
   attributions  OrderAttribution[]
 
   @@map("prescriber_profiles")
+}
+
+model PromoCode {
+  id                 String        @id @default(uuid())
+  code               String        // e.g. "KARIM10" (normalized in uppercase)
+  brandId            String        @map("brand_id")
+  prescriberId       String        @map("prescriber_id")
+  shopifyDiscountId  String?       @map("shopify_discount_id")
+  discountType       DiscountType  @default(PERCENTAGE) @map("discount_type")
+  discountValue      Decimal       @default(10.00) @db.Decimal(5, 2) @map("discount_value")
+  isActive           Boolean       @default(true) @map("is_active")
+  startsAt           DateTime      @default(now()) @map("starts_at")
+  expiresAt          DateTime?     @map("expires_at")
+  usageCount         Int           @default(0) @map("usage_count")
+  usageLimit         Int?          @map("usage_limit")
+  createdAt          DateTime      @default(now()) @map("created_at")
+  updatedAt          DateTime      @updatedAt @map("updated_at")
+
+  // Relations
+  brand         Brand              @relation(fields: [brandId], references: [id], onDelete: Cascade)
+  prescriber    PrescriberProfile  @relation(fields: [prescriberId], references: [id], onDelete: Cascade)
+  prescriptions Prescription[]
+  attributions  OrderAttribution[]
+
+  @@unique([brandId, code])
+  @@index([code])
+  @@index([prescriberId])
+  @@map("promo_codes")
 }
 
 model Prescription {
@@ -99,8 +133,8 @@ model Prescription {
   token        String             @unique
   brandId      String             @map("brand_id")
   prescriberId String             @map("prescriber_id")
+  promoCodeId  String?            @map("promo_code_id")
   items        Json               // Array of { variantId, title, quantity, priceCents }
-  promoCode    String             @map("promo_code")
   notes        String?
   clicksCount  Int                @default(0) @map("clicks_count")
   expiresAt    DateTime?          @map("expires_at")
@@ -110,34 +144,38 @@ model Prescription {
   // Relations
   brand        Brand              @relation(fields: [brandId], references: [id], onDelete: Cascade)
   prescriber   PrescriberProfile  @relation(fields: [prescriberId], references: [id], onDelete: Cascade)
+  promoCode    PromoCode?         @relation(fields: [promoCodeId], references: [id], onDelete: SetNull)
   attributions OrderAttribution[]
 
   @@index([brandId])
   @@index([prescriberId])
   @@index([token])
-  @@index([promoCode])
+  @@index([promoCodeId])
   @@map("prescriptions")
 }
 
 model OrderAttribution {
-  id                     String            @id @default(uuid())
-  brandId                String            @map("brand_id")
-  prescriberId           String            @map("prescriber_id")
-  prescriptionId         String?           @map("prescription_id")
-  shopifyOrderId         String            @unique @map("shopify_order_id")
-  orderAmountCents       Int               @map("order_amount_cents")
-  commissionAmountCents  Int               @map("commission_amount_cents")
-  status                 AttributionStatus @default(PENDING)
-  shopifyCreatedAt       DateTime          @map("shopify_created_at")
-  createdAt              DateTime          @default(now()) @map("created_at")
-  updatedAt              DateTime          @updatedAt @map("updated_at")
+  id                    String            @id @default(uuid())
+  brandId               String            @map("brand_id")
+  prescriberId          String            @map("prescriber_id")
+  prescriptionId        String?           @map("prescription_id")
+  promoCodeId           String?           @map("promo_code_id")
+  shopifyOrderId        String            @unique @map("shopify_order_id")
+  orderAmountCents      Int               @map("order_amount_cents")
+  commissionAmountCents Int               @map("commission_amount_cents")
+  status                AttributionStatus @default(PENDING)
+  shopifyCreatedAt      DateTime          @map("shopify_created_at")
+  createdAt             DateTime          @default(now()) @map("created_at")
+  updatedAt             DateTime          @updatedAt @map("updated_at")
 
   // Relations
   brand        Brand              @relation(fields: [brandId], references: [id], onDelete: Cascade)
   prescriber   PrescriberProfile  @relation(fields: [prescriberId], references: [id], onDelete: Cascade)
   prescription Prescription?      @relation(fields: [prescriptionId], references: [id], onDelete: SetNull)
+  promoCode    PromoCode?         @relation(fields: [promoCodeId], references: [id], onDelete: SetNull)
 
   @@index([brandId, status])
   @@index([prescriberId, status])
+  @@index([promoCodeId])
   @@map("order_attributions")
 }

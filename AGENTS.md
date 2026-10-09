@@ -63,6 +63,11 @@ Bias toward caution, architectural precision, data integrity, and simplicity ove
 - **Define success criteria**: Every task must have a clear verification path (unit test, Prisma migration check, or curl command).
 - **Loop until verified**: Run `npm run lint`, `npm run test`, and check container logs before marking any task as complete.
 
+### 5. Minimal Comments (English Only)
+- **Self-explanatory code first**: Prefer expressive naming and clean structure over comments. Code should document itself.
+- **Minimal & necessary only**: Add comments ONLY when explaining non-obvious business logic, domain nuances, or critical edge cases. Never write redundant comments that restate what the code clearly does.
+- **Strictly English**: All in-code comments, JSDoc, error messages, and documentation must be written strictly in English.
+
 ---
 
 ## Architecture Guidelines & SOLID Principles
@@ -253,7 +258,8 @@ When asked to implement or update a feature:
 5. **Use `@/*` path aliases exclusively**.
 6. **Ensure financial and transactional safety**: Wrap multi-entity writes in Prisma interactive transactions.
 7. **Mock external APIs with MSW**: Never make unmocked external HTTP calls in test suites.
-8. **Run validation checks**:
+8. **Minimal comments in English only**: Avoid superfluous comments. Keep code self-explanatory; add comments only if strictly needed for non-obvious rationale, and write them exclusively in English.
+9. **Run validation checks**:
    ```bash
    npm run lint
    npm run test
