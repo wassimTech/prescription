@@ -130,7 +130,7 @@ model PromoCode {
 
 model Prescription {
   id           String             @id @default(uuid())
-  token        String             @unique
+  token        String             @unique @default(dbgenerated("('presc_' || substr(replace(gen_random_uuid()::text, '-', ''), 1, 10))"))
   brandId      String             @map("brand_id")
   prescriberId String             @map("prescriber_id")
   promoCodeId  String?            @map("promo_code_id")

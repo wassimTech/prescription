@@ -4,6 +4,7 @@ import { ConfigModule } from '@nestjs/config';
 import { PrismaModule } from '@/prisma/prisma.module';
 import { HealthModule } from '@/modules/health/health.module';
 import { AuthModule } from '@/modules/auth/auth.module';
+import { PrescriptionsModule } from '@/modules/prescriptions/prescriptions.module';
 import { LoggingInterceptor } from '@/common/interceptors/logging.interceptor';
 import { TransformInterceptor } from '@/common/interceptors/transform.interceptor';
 import { AllExceptionsFilter } from '@/common/filters/all-exceptions.filter';
@@ -17,6 +18,7 @@ import { AllExceptionsFilter } from '@/common/filters/all-exceptions.filter';
     PrismaModule,
     HealthModule,
     AuthModule,
+    PrescriptionsModule,
   ],
   providers: [
     {
