@@ -2,6 +2,7 @@ import { Test } from '@nestjs/testing';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { AppModule } from '@/app.module';
 import { PrismaService } from '@/prisma/prisma.service';
+import { assertSafeTestEnvironment } from './db-safety-guard';
 
 export interface CustomOverride {
   provide: unknown;
@@ -14,6 +15,8 @@ export interface CreateTestAppOptions {
 }
 
 export async function createTestApp(options: CreateTestAppOptions = {}): Promise<INestApplication> {
+  assertSafeTestEnvironment();
+
   let builder = Test.createTestingModule({
     imports: [AppModule],
   });

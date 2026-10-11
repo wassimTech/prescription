@@ -1,9 +1,9 @@
 services:
   # ============================================================================
-  # 1. PostgreSQL Database Service
+  # 1. PostgreSQL Database Service (Profiles: dev, prod)
   # ============================================================================
   postgres:
-    profiles: ['dev']
+    profiles: ['dev', 'prod']
     image: postgres:16-alpine
     container_name: prescription_postgres
     restart: unless-stopped
@@ -15,6 +15,8 @@ services:
       - "${POSTGRES_PORT:-5433}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    networks:
+      - prescription-network
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-prescription_saas_dev}"]
       interval: 5s
@@ -22,21 +24,135 @@ services:
       retries: 5
 
   # ============================================================================
-  # 2. pgAdmin 4 Web GUI
+  # 2. pgAdmin 4 Web GUI (Profile: dev ONLY - jamais en prod)
   # ============================================================================
   pgadmin:
+    profiles: ['dev']
     image: dpage/pgadmin4:latest
     container_name: prescription_pgadmin
-    profiles: ['dev']
     restart: unless-stopped
     environment:
       PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL:-admin@example.com}
       PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD:-admin}
     ports:
       - "${PGADMIN_PORT:-5055}:80"
+    networks:
+      - prescription-network
     depends_on:
       postgres:
         condition: service_healthy
 
+  # ============================================================================
+  # 3. SonarQube Dedicated Database (Profile: quality)
+  # ============================================================================
+  sonar-db:
+    profiles: ['quality']
+    image: postgres:16-alpine
+    container_name: prescription_sonar_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${SONAR_DB_USER:-sonar}
+      POSTGRES_PASSWORD: ${SONAR_DB_PASSWORD:-sonar}
+      POSTGRES_DB: ${SONAR_DB_NAME:-sonar}
+    volumes:
+      - sonar_db_data:/var/lib/postgresql/data
+    networks:
+      - prescription-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${SONAR_DB_USER:-sonar} -d ${SONAR_DB_NAME:-sonar}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # ============================================================================
+  # 4. SonarQube Community Edition (Profile: quality)
+  # ============================================================================
+  sonarqube:
+    profiles: ['quality']
+    image: sonarqube:community
+    container_name: prescription_sonarqube
+    restart: unless-stopped
+    depends_on:
+      sonar-db:
+        condition: service_healthy
+    ports:
+      - "${SONARQUBE_PORT:-9000}:9000"
+    environment:
+      SONAR_JDBC_URL: jdbc:postgresql://sonar-db:5432/${SONAR_DB_NAME:-sonar}
+      SONAR_JDBC_USERNAME: ${SONAR_DB_USER:-sonar}
+      SONAR_JDBC_PASSWORD: ${SONAR_DB_PASSWORD:-sonar}
+    volumes:
+      - sonar_data:/opt/sonarqube/data
+      - sonar_extensions:/opt/sonarqube/extensions
+      - sonar_logs:/opt/sonarqube/logs
+    networks:
+      - prescription-network
+
+  # ============================================================================
+  # 5. Ephemeral PostgreSQL for Local E2E Tests (Profile: test)
+  # ============================================================================
+  postgres-test:
+    profiles: ['test']
+    image: postgres:16-alpine
+    container_name: prescription_postgres_test
+    restart: "no"
+    environment:
+      POSTGRES_USER: ${POSTGRES_TEST_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_TEST_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_TEST_DB:-prescription_test}
+    ports:
+      - "${POSTGRES_TEST_PORT:-5434}:5432"
+    networks:
+      - prescription-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_TEST_USER:-postgres} -d ${POSTGRES_TEST_DB:-prescription_test}"]
+      interval: 3s
+      timeout: 3s
+      retries: 5
+
+  # ============================================================================
+  # 6. Production NestJS Container for Local Validation (Profile: prod)
+  # ============================================================================
+  app-prod:
+    profiles: ['prod']
+    build:
+      context: .
+      target: production
+    container_name: prescription_api_prod
+    restart: unless-stopped
+    ports:
+      - "${PORT:-3000}:3000"
+    environment:
+      NODE_ENV: production
+      PORT: ${PORT:-3000}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-prescription_saas_dev}?schema=public
+      JWT_SECRET: ${JWT_SECRET:-super_secret_jwt_key_2026_change_in_production}
+      JWT_EXPIRATION: ${JWT_EXPIRATION:-7d}
+      SHOPIFY_API_KEY: ${SHOPIFY_API_KEY:-mock_shopify_api_key}
+      SHOPIFY_API_SECRET: ${SHOPIFY_API_SECRET:-mock_shopify_api_secret}
+      SHOPIFY_WEBHOOK_SECRET: ${SHOPIFY_WEBHOOK_SECRET:-mock_webhook_secret}
+    networks:
+      - prescription-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+# ==============================================================================
+# NETWORKS & VOLUMES
+# ==============================================================================
+networks:
+  prescription-network:
+    name: prescription-network
+    driver: bridge
+
 volumes:
   postgres_data:
+    name: prescription_postgres_data
+  sonar_db_data:
+    name: prescription_sonar_db_data
+  sonar_data:
+    name: prescription_sonar_data
+  sonar_extensions:
+    name: prescription_sonar_extensions
+  sonar_logs:
+    name: prescription_sonar_logs

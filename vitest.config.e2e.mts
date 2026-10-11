@@ -7,6 +7,7 @@ export default defineConfig({
     root: './',
     environment: 'node',
     include: ['test/**/*.e2e-spec.ts'],
+    setupFiles: ['./test/setup-e2e.ts'],
   },
   resolve: {
     tsconfigPaths: true,
