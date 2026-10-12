@@ -136,6 +136,7 @@ jobs:
     name: SonarQube Quality Gate Analysis
     runs-on: ubuntu-latest
     needs: [lint-and-typecheck, unit-tests]
+    if: ${{ secrets.SONAR_TOKEN != '' }}
     steps:
       - name: Checkout Repository (Full History for Blame)
         uses: actions/checkout@v4
@@ -148,21 +149,45 @@ jobs:
           name: coverage-report
           path: coverage
 
+      - name: Validate & Configure Sonar Environment
+        id: sonar-env
+        run: |
+          # 1. Resolve and validate SONAR_HOST_URL (secret or repository variable)
+          HOST_INPUT="${{ secrets.SONAR_HOST_URL || vars.SONAR_HOST_URL }}"
+          if [ -n "$HOST_INPUT" ]; then
+            CLEAN_HOST="$(echo "$HOST_INPUT" | xargs)"
+            if [[ ! "$CLEAN_HOST" =~ ^https?:// ]]; then
+              echo "::error::SONAR_HOST_URL is invalid ('$CLEAN_HOST'). It must start with http:// or https://"
+              exit 1
+            fi
+            echo "SONAR_HOST_URL=$CLEAN_HOST" >> "$GITHUB_ENV"
+            echo "SonarQube Host URL configured: $CLEAN_HOST"
+          else
+            echo "No SONAR_HOST_URL specified; default SonarQube Cloud endpoint (https://sonarcloud.io) will be used."
+          fi
+
+          # 2. Resolve optional SonarCloud organization (secret or repository variable)
+          ORG_INPUT="${{ secrets.SONAR_ORGANIZATION || vars.SONAR_ORGANIZATION }}"
+          if [ -n "$ORG_INPUT" ]; then
+            CLEAN_ORG="$(echo "$ORG_INPUT" | xargs)"
+            echo "SONAR_ORG_FLAG=-Dsonar.organization=$CLEAN_ORG" >> "$GITHUB_ENV"
+            echo "SonarCloud Organization configured: $CLEAN_ORG"
+          fi
+
       - name: Execute SonarQube / SonarCloud Scan
         uses: sonarsource/sonarqube-scan-action@v5
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
         with:
           args: >
             -Dproject.settings=sonar-project.properties
+            ${{ env.SONAR_ORG_FLAG }}
 
       - name: Enforce SonarQube Quality Gate
         uses: sonarsource/sonarqube-quality-gate-action@v1
         timeout-minutes: 5
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
 
   # ============================================================================
   # Job 5: Production Build & Container Verification
